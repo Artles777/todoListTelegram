@@ -5,15 +5,16 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-		"start": "nodemon index.js"
-	},
+    "start": "nodemon index.js"
+  },
   "keywords": [],
   "author": "Artles777 <alesenko19961996@gamil.com>",
   "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^15.0.3",
+    "nodemon": "^2.0.7"
+  },
   "dependencies": {
     "telegraf": "^4.3.0"
-  },
-  "devDependencies": {
-    "nodemon": "^2.0.7"
   }
 }
