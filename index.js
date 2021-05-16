@@ -1,12 +1,12 @@
 import { session, Telegraf } from 'telegraf'
 import { addNewTodoStages } from './controls/addNewTodo.js'
-import { todoList } from './store/state.js'
+import localSession from "./store/state.js";
 
 const TOKEN = '1623595362:AAFW5pEbhlxX59AsiUBiPHybIh4MsBIYZaE'
 
-export let todo = '';
-
 const bot = new Telegraf(TOKEN)
+
+bot.use(localSession.middleware('session'))
 
 bot.use(session());
 bot.use(addNewTodoStages.middleware());
@@ -24,14 +24,27 @@ bot.command('newtodo', (ctx) => {
 		const {text} = ctx.message
 		ctx.reply(`У вас новая задача: ${text}`)
 
-		todoList.push(text)
-		ctx.reply('Список ваших задач:\n' + todoList)
+		// todoList.push(text)
+		ctx.reply('Список ваших задач:\n')
 	})
 })
 
+bot.command('rm', (ctx) => {
+	const id = `${ctx.message.from.id}:${ctx.message.chat.id}`
+	if (ctx.sessionDB.get('todoList').find({ id }).value().id === id) {
+		// ctx.sessionDB.set(`todoList.todos`, []).write()
+		ctx.sessionDB.get('todoList').find({ id }).value().todos = []
+	}
+	ctx.reply('Список задач очищен!')
+})
+
 bot.on('text', (ctx) => {
-	todo = ctx.message.text
+	ctx.session = {
+		newTodo: ctx.message.text,
+		id: `${ctx.message.from.id}:${ctx.message.chat.id}`
+	}
 	ctx.scene.enter('ADD_NEW_TODO')
+		.then(() => console.log('Начало сцены добавления новой задачи'))
 })
 
 bot.launch().then(() => console.log('Bot success!'))

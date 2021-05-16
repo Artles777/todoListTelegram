@@ -1,37 +1,46 @@
 import { Markup, Scenes } from 'telegraf'
-import { todo } from '../index.js'
-import { todoList } from '../store/state.js'
+// import uuid from 'uuid'
 
 export const addNewTodo = new Scenes.BaseScene('ADD_NEW_TODO')
 export const addNewTodoStages = new Scenes.Stage([addNewTodo])
 
 addNewTodo.enter((ctx) => {
-    ctx.session.todoData = {}
 	ctx.reply('Вы хотите добавить новую задачу в список?', Markup.inlineKeyboard([
-        Markup.button.callback('Да', 'ADD_TODO'),
-        Markup.button.callback('Нет', 'REMOVE_TODO')
-    ]))
+		Markup.button.callback('Да', 'ADD_TODO'),
+		Markup.button.callback('Нет', 'NO_TODO')
+	]))
 })
 
 addNewTodo.action('ADD_TODO', (ctx) => {
-    ctx.reply('Задача добавлена!')
-    todoList.push(todo)
-    ctx.session.todoData = 'Да'
+	const { id } = ctx.session
+	if (ctx.sessionDB.get('todoList').find({ id }).value() === undefined) {
+		ctx.sessionDB.get('todoList').push({ id, todos: [] }).write()
+	}
+	if (ctx.sessionDB.get('todoList').find({ id }).value().id === id) {
+		ctx.sessionDB.get('todoList').find({ id }).value().todos.push(ctx.session.newTodo)
+	}
+	ctx.reply('Задача добавлена!')
 
     return ctx.scene.leave();
 })
 
-addNewTodo.action('REMOVE_TODO', (ctx) => {
+addNewTodo.action('NO_TODO', (ctx) => {
     ctx.reply('Задача не была добавлена!')
-    ctx.session.todoData = 'Нет'
-    
+
     return ctx.scene.leave();
 })
 
 addNewTodo.leave((ctx) => {
-    if (todoList.length) {
-        ctx.reply(`Ваш список задач: \n${todoList.join(', ')}`)
-    } else {
-        ctx.reply('Ваш список задач пуст.')
-    }
+	const list = {}
+	const { id } = ctx.session
+	if (ctx.sessionDB.get('todoList').find({ id }).value().todos.length) {
+			ctx.sessionDB.get('todoList')
+				.find({ id }).value().todos.forEach((todo, idx) => {
+					list[idx + 1] = todo
+				})
+		const result = Object.entries(list).map(t => t.join(': '))
+		ctx.reply(`Ваш список задач:\n\n${result.join(',\n')}`)
+	} else {
+			ctx.reply('Ваш список задач пуст.')
+	}
 })
